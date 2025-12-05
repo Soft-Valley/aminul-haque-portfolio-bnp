@@ -4,17 +4,13 @@ import Link from 'next/link';
 import Hero from './components/Hero';
 import { motion } from 'framer-motion';
 import WelcomeModal from './components/WelcomeModal';
+import { useState, useEffect } from 'react';
 // import TestimonialCarousel from './components/TestimonialCarousel';
 import { 
   FaArrowRight, 
   FaMapMarkerAlt, 
   FaNewspaper, 
   FaExclamationTriangle,
-  FaBus,
-  FaTint,
-  FaHospital,
-  FaGraduationCap,
-  FaTree,
   FaChartLine,
   FaFileAlt,
   FaFlag,
@@ -24,49 +20,134 @@ import {
 } from 'react-icons/fa';
 import Image from 'next/image';
 
+interface Album {
+  id: number;
+  uuid: string;
+  bang_name: string;
+  bang_description: string;
+  date: string;
+  location: string;
+  status: string;
+  media: Array<{
+    id: number;
+    uuid: string;
+    path: string;
+    type: string;
+  }>;
+}
+
+const defaultColors = [
+  'from-amber-500 to-orange-600',
+  'from-emerald-500 to-green-600',
+  'from-purple-500 to-pink-600',
+  'from-blue-500 to-cyan-600',
+  'from-red-500 to-rose-600',
+];
+
+// Format date to Bengali
+const formatDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    const months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  } catch (error) {
+    return dateString;
+  }
+};
+
+interface Quote {
+  id: number;
+  status: string;
+  quotes: string;
+  writer: string;
+}
+
 export default function Home() {
-  const keyPrograms = [
-    {
-      icon: FaBus,
-      title: "যানজট নিরসন",
-      subtitle: "আধুনিক গণপরিবহন ব্যবস্থা",
-      description: "আধুনিক গণপরিবহন ব্যবস্থা গড়ে তুলে এবং ট্র্যাফিক ব্যবস্থাপনা উন্নত করে ঢাকাকে যানজটমুক্ত করা হবে।",
-      color: "from-blue-500 to-cyan-600",
-      link: "/programs"
-    },
-    {
-      icon: FaTint,
-      title: "বিশুদ্ধ পানির সরবরাহ",
-      subtitle: "প্রতিটি বাড়িতে বিশুদ্ধ পানি",
-      description: "নতুন পাইপলাইন স্থাপন এবং ওয়াটার ট্রিটমেন্ট প্ল্যান্ট তৈরি করে প্রতিটি বাড়িতে বিশুদ্ধ পানির সরবরাহ নিশ্চিত করা হবে।",
-      color: "from-cyan-500 to-blue-600",
-      link: "/programs"
-    },
-    {
-      icon: FaHospital,
-      title: "সাশ্রয়ী স্বাস্থ্যসেবা",
-      subtitle: "সবার জন্য মানসম্মত চিকিৎসা",
-      description: "হাসপাতালের মান উন্নয়ন এবং নতুন ক্লিনিক স্থাপন করে সাধারণ মানুষের জন্য সাশ্রয়ী স্বাস্থ্যসেবা নিশ্চিত করা হবে।",
-      color: "from-red-500 to-pink-600",
-      link: "/programs"
-    },
-    {
-      icon: FaGraduationCap,
-      title: "মানসম্মত শিক্ষা",
-      subtitle: "সকল শিশুর জন্য উন্নত শিক্ষা",
-      description: "স্কুল আধুনিকায়ন, শিক্ষক প্রশিক্ষণ এবং প্রযুক্তিভিত্তিক শিক্ষা প্রসারের মাধ্যমে মানসম্মত শিক্ষা নিশ্চিত করা হবে।",
-      color: "from-purple-500 to-indigo-600",
-      link: "/programs"
-    },
-    {
-      icon: FaTree,
-      title: "পরিষ্কার ও সবুজ ঢাকা",
-      subtitle: "বাসযোগ্য সবুজ নগরী",
-      description: "আধুনিক বর্জ্য ব্যবস্থাপনা এবং সবুজায়ন বৃদ্ধির মাধ্যমে ঢাকাকে একটি স্বাস্থ্যকর ও বাসযোগ্য নগরী হিসেবে গড়ে তোলা হবে।",
-      color: "from-green-500 to-emerald-600",
-      link: "/programs"
-    },
-  ];
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [albumsLoading, setAlbumsLoading] = useState(true);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAlbums = async () => {
+      try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+        const response = await fetch(`${apiBaseUrl}/albums/list`, {
+          cache: 'no-store',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Handle the API response structure
+          let albumsData: Album[] = [];
+          if (data.success && data.data) {
+            if (data.data.data && Array.isArray(data.data.data)) {
+              albumsData = data.data.data;
+            } else if (Array.isArray(data.data)) {
+              albumsData = data.data;
+            }
+          } else if (Array.isArray(data)) {
+            albumsData = data;
+          } else if (data.data && Array.isArray(data.data)) {
+            albumsData = data.data;
+          }
+
+          // Filter active albums and take first 3
+          const activeAlbums = albumsData
+            .filter((album: Album) => album.status === 'active')
+            .slice(0, 3);
+          
+          setAlbums(activeAlbums);
+        }
+      } catch (err) {
+        console.error('Error fetching albums:', err);
+      } finally {
+        setAlbumsLoading(false);
+      }
+    };
+
+    fetchAlbums();
+  }, []);
+
+  // Fetch quotes from API
+  useEffect(() => {
+    const fetchQuotes = async () => {
+      try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+        const response = await fetch(`${apiBaseUrl}/quotes`, {
+          cache: 'no-store',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Handle the API response structure
+          let quotesData: Quote[] = [];
+          if (data.success && data.data && Array.isArray(data.data)) {
+            quotesData = data.data;
+          } else if (Array.isArray(data)) {
+            quotesData = data;
+          }
+
+          // Filter only active quotes
+          const activeQuotes = quotesData
+            .filter((quote: Quote) => quote.status === 'active');
+          
+          setQuotes(activeQuotes);
+        }
+      } catch (err) {
+        console.error('Error fetching quotes:', err);
+      } finally {
+        setQuotesLoading(false);
+      }
+    };
+
+    fetchQuotes();
+  }, []);
 
   const manifestos = [
     {
@@ -199,140 +280,101 @@ export default function Home() {
           </motion.div>
 
           <div className="space-y-16">
-
-            {/* Gallery 2: Community Health Camp */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-600 rounded-3xl blur-2xl opacity-20"></div>
-              <div className="relative bg-white rounded-3xl p-8 md:p-12 shadow-2xl border border-slate-200">
-                {/* Event Header */}
-                <div className="mb-8">
-                  <h3 className="text-3xl md:text-4xl font-black text-slate-900 mb-2">
-                    সম্প্রদায় স্বাস্থ্য ক্যাম্প
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-slate-700">
-                      <div className="p-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg">
-                        <FaCalendarAlt className="text-white" />
-                      </div>
-                      <span className="font-bold">২২ নভেম্বর ২০২৩</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-700">
-                      <div className="p-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg">
-                        <FaMapMarkerAlt className="text-white" />
-                      </div>
-                      <span>মিরপুর-১০, ঢাকা</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-700">
-                      <div className="p-2 bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg">
-                        <FaImages className="text-white" />
-                      </div>
-                      <span>৮ ফটো</span>
-                    </div>
-                  </div>
-                  <p className="text-slate-600 text-lg leading-relaxed mt-4">
-                    সাধারণ মানুষের জন্য বিনামূল্যে স্বাস্থ্য পরীক্ষা, ডায়াবেটিস স্ক্রিনিং, রক্তচাপ পরীক্ষা এবং বিশেষজ্ঞ ডাক্তারদের পরামর্শ প্রদান করা হয়েছে।
-                  </p>
-                </div>
-
-                {/* Images Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[1, 2, 3, 4].map((idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.4, delay: idx * 0.1 }}
-                      whileHover={{ scale: 1.05 }}
-                      className="group relative cursor-pointer rounded-xl overflow-hidden aspect-square shadow-lg hover:shadow-2xl transition-all"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-t from-emerald-500 to-green-600 opacity-0 group-hover:opacity-75 transition-all z-10"></div>
-                      <img
-                        src={idx % 3 === 0 ? '/aminul_haque.jpg' : idx % 3 === 1 ? '/aminul_nomination_post.webp' : '/aminul_haque.jpg'}
-                        alt={`স্বাস্থ্য ক্যাম্প - ছবি ${idx}`}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-20">
-                        <FaImages className="text-4xl text-white" />
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+            {albumsLoading ? (
+              <div className="text-center py-20">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mb-4"></div>
+                <p className="text-xl text-slate-600">লোড হচ্ছে...</p>
               </div>
-            </motion.div>
+            ) : albums.length > 0 ? (
+              albums.map((album, idx) => {
+                // Get only image media
+                const images = album.media
+                  .filter((media) => media.type === 'image')
+                  .map((media) => media.path)
+                  .slice(0, 8); // Show max 8 images
 
-            {/* Gallery 3: Cultural Program */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="relative"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-600 rounded-3xl blur-2xl opacity-20"></div>
-              <div className="relative bg-white rounded-3xl p-8 md:p-12 shadow-2xl border border-slate-200">
-                {/* Event Header */}
-                <div className="mb-8">
-                  <h3 className="text-3xl md:text-4xl font-black text-slate-900 mb-2">
-                    সাংস্কৃতিক অনুষ্ঠান ও জনসভা
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-slate-700">
-                      <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg">
-                        <FaCalendarAlt className="text-white" />
+                const color = defaultColors[idx % defaultColors.length];
+                
+                return (
+                  <motion.div
+                    key={album.uuid || album.id}
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: idx * 0.2 }}
+                    className="relative"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-r ${color} rounded-3xl blur-2xl opacity-20`}></div>
+                    <div className="relative bg-white rounded-3xl p-8 md:p-12 shadow-2xl border border-slate-200">
+                      {/* Event Header */}
+                      <div className="mb-8">
+                        <h3 className="text-3xl md:text-4xl font-black text-slate-900 mb-2">
+                          {album.bang_name}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-4 mb-4">
+                          <div className="flex items-center gap-2 text-slate-700">
+                            <div className={`p-2 bg-gradient-to-r ${color} rounded-lg`}>
+                              <FaCalendarAlt className="text-white" />
+                            </div>
+                            <span className="font-bold">{formatDate(album.date)}</span>
+                          </div>
+                          {album.location && (
+                            <div className="flex items-center gap-2 text-slate-700">
+                              <div className={`p-2 bg-gradient-to-r ${color} rounded-lg`}>
+                                <FaMapMarkerAlt className="text-white" />
+                              </div>
+                              <span>{album.location}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 text-slate-700">
+                            <div className={`p-2 bg-gradient-to-r ${color} rounded-lg`}>
+                              <FaImages className="text-white" />
+                            </div>
+                            <span>{images.length} ফটো</span>
+                          </div>
+                        </div>
+                        {album.bang_description && (
+                          <p className="text-slate-600 text-lg leading-relaxed mt-4">
+                            {album.bang_description}
+                          </p>
+                        )}
                       </div>
-                      <span className="font-bold">১০ ডিসেম্বর ২০২৩</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-700">
-                      <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg">
-                        <FaMapMarkerAlt className="text-white" />
-                      </div>
-                      <span>সোহরাওয়ার্দী উদ্যান, ঢাকা</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-700">
-                      <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg">
-                        <FaImages className="text-white" />
-                      </div>
-                      <span>৫ ফটো</span>
-                    </div>
-                  </div>
-                  <p className="text-slate-600 text-lg leading-relaxed mt-4">
-                    ঐতিহ্যবাহী সাংস্কৃতিক অনুষ্ঠান, গান, নৃত্য এবং জনসভার মাধ্যমে জনগণের সাথে সরাসরি যোগাযোগ স্থাপন করা হয়েছে।
-                  </p>
-                </div>
 
-                {/* Images Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {[1, 2, 3, 4, 5].map((idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.4, delay: idx * 0.1 }}
-                      whileHover={{ scale: 1.05 }}
-                      className="group relative cursor-pointer rounded-xl overflow-hidden aspect-square shadow-lg hover:shadow-2xl transition-all"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-t from-purple-500 to-pink-600 opacity-0 group-hover:opacity-75 transition-all z-10"></div>
-                      <img
-                        src={idx % 2 === 0 ? '/aminul_nomination_post.webp' : '/aminul_haque.jpg'}
-                        alt={`সাংস্কৃতিক অনুষ্ঠান - ছবি ${idx}`}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-20">
-                        <FaImages className="text-4xl text-white" />
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                      {/* Images Grid */}
+                      {images.length > 0 && (
+                        <div className={`grid grid-cols-2 ${images.length <= 4 ? 'md:grid-cols-4' : 'md:grid-cols-4'} gap-4`}>
+                          {images.map((image, imageIdx) => (
+                            <motion.div
+                              key={imageIdx}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              whileInView={{ opacity: 1, scale: 1 }}
+                              viewport={{ once: true }}
+                              transition={{ duration: 0.4, delay: imageIdx * 0.1 }}
+                              whileHover={{ scale: 1.05 }}
+                              className="group relative cursor-pointer rounded-xl overflow-hidden aspect-square shadow-lg hover:shadow-2xl transition-all"
+                            >
+                              <div className={`absolute inset-0 bg-gradient-to-t ${color} opacity-0 group-hover:opacity-75 transition-all z-10`}></div>
+                              <img
+                                src={image}
+                                alt={`${album.bang_name} - ছবি ${imageIdx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-20">
+                                <FaImages className="text-4xl text-white" />
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })
+            ) : (
+              <div className="text-center py-20">
+                <p className="text-xl text-slate-600">কোনো অ্যালবাম পাওয়া যায়নি</p>
               </div>
-            </motion.div>
+            )}
           </div>
 
           <div className="text-center mt-16">
@@ -395,40 +437,38 @@ export default function Home() {
               transition={{ duration: 0.6 }}
               className="space-y-6"
             >
-              {[
-                {
-                  quote: "জনগণই সবচেয়ে বড় শক্তি। তাদের সাথে থাকলে, তাদের জন্য কাজ করলে, সাফল্য অবশ্যম্ভাবী।",
-                  author: "আমিনুল হক"
-                },
-                {
-                  quote: "শিক্ষা, স্বাস্থ্য, এবং উন্নয়ন - এই তিনটি স্তম্ভের উপর ভিত্তি করেই আমরা একটি সমৃদ্ধ বাংলাদেশ গড়ে তুলব।",
-                  author: "আমিনুল হক"
-                },
-                {
-                  quote: "সত্য, ন্যায় এবং জনগণের কল্যাণ - এই তিনটি নীতির উপর ভিত্তি করেই আমাদের রাজনীতি পরিচালিত হবে।",
-                  author: "আমিনুল হক"
-                }
-              ].map((item, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: idx * 0.2 }}
-                  className="relative bg-white rounded-2xl p-6 md:p-8 shadow-xl border border-slate-200 hover:shadow-2xl transition-all"
-                >
-                  <div className="absolute top-4 left-4 text-indigo-200">
-                    <FaQuoteLeft className="text-4xl" />
-                  </div>
-                  <p className="text-lg md:text-xl text-slate-700 leading-relaxed mb-4 relative z-10 pl-8">
-                    "{item.quote}"
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="h-1 w-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full"></div>
-                    <p className="text-sm font-bold text-indigo-600">— {item.author}</p>
-                  </div>
-                </motion.div>
-              ))}
+              {quotesLoading ? (
+                <div className="text-center py-10">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+                  <p className="text-slate-600">লোড হচ্ছে...</p>
+                </div>
+              ) : quotes.length > 0 ? (
+                quotes.map((quote, idx) => (
+                  <motion.div
+                    key={quote.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: idx * 0.2 }}
+                    className="relative bg-white rounded-2xl p-6 md:p-8 shadow-xl border border-slate-200 hover:shadow-2xl transition-all"
+                  >
+                    <div className="absolute top-4 left-4 text-indigo-200">
+                      <FaQuoteLeft className="text-4xl" />
+                    </div>
+                    <p className="text-lg md:text-xl text-slate-700 leading-relaxed mb-4 relative z-10 pl-8">
+                      "{quote.quotes}"
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="h-1 w-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full"></div>
+                      <p className="text-sm font-bold text-indigo-600">{quote.writer}</p>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-slate-600">কোনো উক্তি পাওয়া যায়নি</p>
+                </div>
+              )}
             </motion.div>
           </div>
         </div>

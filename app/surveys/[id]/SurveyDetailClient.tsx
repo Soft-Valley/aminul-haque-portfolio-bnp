@@ -4,26 +4,29 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { FaArrowLeft, FaCheckCircle, FaImage, FaVideo, FaQuestionCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaCheckCircle, FaQuestionCircle } from 'react-icons/fa';
 import Image from 'next/image';
 
 interface Question {
-  id: string;
-  type: string;
-  question: string;
-  options?: string[];
-  placeholder?: string;
-  required?: boolean;
+  id: number;
+  survey_id: number;
+  question_type: string;
+  question_text: string;
+  options: Array<{
+    id: number;
+    question_id: number;
+    option_text: string;
+  }>;
+  formatted_options: string[];
 }
 
 interface Survey {
-  id: string;
+  id: number;
+  uuid: string;
+  status: string;
+  image?: string;
   title: string;
-  shortDescription: string;
   description: string;
-  thumbnail?: string;
-  images?: string[];
-  videos?: Array<{ url: string; title: string }>;
   questions: Question[];
 }
 
@@ -47,19 +50,20 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleAnswerChange = (questionId: string, value: string) => {
+  const handleAnswerChange = (questionId: number | string, value: string) => {
+    const idStr = questionId.toString();
     setFormData((prev) => ({
       ...prev,
       answers: {
         ...prev.answers,
-        [questionId]: value,
+        [idStr]: value,
       },
     }));
     // Clear error for this question
-    if (errors[questionId]) {
+    if (errors[idStr]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
-        delete newErrors[questionId];
+        delete newErrors[idStr];
         return newErrors;
       });
     }
@@ -94,11 +98,11 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
       newErrors.area = 'এলাকা আবশ্যক';
     }
 
-    // Validate required questions
+    // Validate required questions (all questions are required by default)
     if (survey) {
       survey.questions.forEach((question) => {
-        if (question.required && !formData.answers[question.id]) {
-          newErrors[question.id] = 'এই প্রশ্নের উত্তর আবশ্যক';
+        if (!formData.answers[question.id.toString()]) {
+          newErrors[question.id.toString()] = 'এই প্রশ্নের উত্তর আবশ্যক';
         }
       });
     }
@@ -205,73 +209,27 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
         </div>
       </section>
 
-      {/* Images/Videos Section */}
-      {(survey.images && survey.images.length > 0) || (survey.videos && survey.videos.length > 0) ? (
+      {/* Image Section */}
+      {survey.image && (
         <section className="py-12 px-4">
           <div className="mx-auto max-w-4xl">
-            {/* Images */}
-            {survey.images && survey.images.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-2xl font-black text-slate-900 mb-4 flex items-center gap-2">
-                  <FaImage className="text-emerald-600" />
-                  ছবি
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {survey.images.map((image, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      className="relative h-64 rounded-2xl overflow-hidden shadow-lg bg-slate-200"
-                    >
-                      <Image
-                        src={image}
-                        alt={`${survey.title} - Image ${idx + 1}`}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Videos */}
-            {survey.videos && survey.videos.length > 0 && (
-              <div>
-                <h3 className="text-2xl font-black text-slate-900 mb-4 flex items-center gap-2">
-                  <FaVideo className="text-emerald-600" />
-                  ভিডিও
-                </h3>
-                <div className="space-y-6">
-                  {survey.videos.map((video, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      className="relative rounded-2xl overflow-hidden shadow-lg"
-                    >
-                      <div className="relative pb-[56.25%] h-0">
-                        <iframe
-                          className="absolute top-0 left-0 w-full h-full"
-                          src={video.url}
-                          title={video.title}
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          allowFullScreen
-                        ></iframe>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="relative h-96 rounded-2xl overflow-hidden shadow-lg bg-slate-200"
+            >
+              <Image
+                src={survey.image}
+                alt={survey.title}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </motion.div>
           </div>
         </section>
-      ) : null}
+      )}
 
       {/* Survey Form */}
       <section className="py-12 px-4">
@@ -293,26 +251,24 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
                     className="border-b border-slate-200 pb-8 last:border-b-0"
                   >
                     <label className="block text-lg font-bold text-slate-900 mb-4">
-                      {question.question}
-                      {question.required && (
-                        <span className="text-red-500 ml-1">*</span>
-                      )}
+                      {question.question_text}
+                      <span className="text-red-500 ml-1">*</span>
                     </label>
-                    {errors[question.id] && (
-                      <p className="text-red-500 text-sm font-bold mb-2">{errors[question.id]}</p>
+                    {errors[question.id.toString()] && (
+                      <p className="text-red-500 text-sm font-bold mb-2">{errors[question.id.toString()]}</p>
                     )}
-                    {question.type === 'multiple-choice' && question.options ? (
+                    {question.question_type === 'multiple' && question.formatted_options && question.formatted_options.length > 0 ? (
                       <div className="space-y-3">
-                        {question.options.map((option, optIdx) => (
+                        {question.formatted_options.map((option, optIdx) => (
                           <label
                             key={optIdx}
                             className="flex items-center p-4 rounded-xl border-2 border-slate-200 hover:border-emerald-500 cursor-pointer transition-all group"
                           >
                             <input
                               type="radio"
-                              name={question.id}
+                              name={question.id.toString()}
                               value={option}
-                              checked={formData.answers[question.id] === option}
+                              checked={formData.answers[question.id.toString()] === option}
                               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                               className="w-5 h-5 text-emerald-600 focus:ring-emerald-500 focus:ring-2"
                             />
@@ -324,9 +280,9 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
                       </div>
                     ) : (
                       <textarea
-                        value={formData.answers[question.id] || ''}
+                        value={formData.answers[question.id.toString()] || ''}
                         onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                        placeholder={question.placeholder || 'আপনার উত্তর লিখুন...'}
+                        placeholder="আপনার উত্তর লিখুন..."
                         rows={4}
                         className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700 font-medium"
                       />

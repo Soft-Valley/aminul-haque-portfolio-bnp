@@ -1,67 +1,236 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaCalendarAlt, FaMapMarkerAlt, FaImages, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaCalendarAlt, FaMapMarkerAlt, FaImages, FaTimes, FaChevronLeft, FaChevronRight, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
 
-const CAMPAIGN_EVENTS = [
-  {
-    date: '১৫ অক্টোবর ২০২৩',
-    location: 'ঢাকা বিশ্ববিদ্যালয় প্রাঙ্গণ',
-    title: 'যুব নেতৃত্ব সেমিনার এবং ছাত্র মিথস্ক্রিয়া',
-    description: 'দেশের ভবিষ্যৎ নেতৃত্ব গড়ে তোলার লক্ষ্যে ছাত্র-যুবদের সাথে মতবিনিময় এবং তাদের স্বপ্ন ও আকাঙ্ক্ষা নিয়ে আলোচনা করা হয়েছে।',
-    images: [
-      '/aminul_haque.jpg',
-      '/aminul_nomination_post.webp',
-      '/aminul_haque.jpg',
-      '/aminul_nomination_post.webp',
-    ],
-    color: 'from-amber-500 to-orange-600',
-  },
-  {
-    date: '২ অক্টোবর ২০২৩',
-    location: 'ময়মনসিংহ কৃষি সমবায়',
-    title: 'কৃষক মিলনায়তন এবং প্রশিক্ষণ সেশন',
-    description: 'কৃষকদের সমস্যা সমাধান এবং আধুনিক কৃষি পদ্ধতি সম্পর্কে প্রশিক্ষণ প্রদান করা হয়েছে। কৃষি উন্নয়নে সরকারি সহায়তা বৃদ্ধির বিষয়েও আলোচনা হয়েছে।',
-    images: [
-      '/aminul_haque.jpg',
-      '/aminul_nomination_post.webp',
-      '/aminul_haque.jpg',
-    ],
-    color: 'from-emerald-500 to-green-600',
-  },
-  {
-    date: '২০ সেপ্টেম্বর ২০২৩',
-    location: 'চট্টগ্রাম সাংস্কৃতিক কেন্দ্র',
-    title: 'লোক সঙ্গীত উৎসব এবং কারুশিল্প প্রদর্শনী',
-    description: 'বাংলার ঐতিহ্যবাহী সংস্কৃতি এবং কারুশিল্পের প্রচার ও সংরক্ষণের উদ্যোগ। স্থানীয় শিল্পীদের সাথে মতবিনিময় এবং সাংস্কৃতিক উন্নয়নে সহায়তার প্রতিশ্রুতি প্রদান করা হয়েছে।',
-    images: [
-      '/aminul_haque.jpg',
-      '/aminul_nomination_post.webp',
-      '/aminul_haque.jpg',
-      '/aminul_nomination_post.webp',
-      '/aminul_haque.jpg',
-    ],
-    color: 'from-purple-500 to-pink-600',
-  },
-  {
-    date: '৮ সেপ্টেম্বর ২০২৩',
-    location: 'সিলেট গ্রামীণ স্কুল ভিজিট',
-    title: 'বৃত্তি প্রোগ্রাম চালু এবং স্কুল সরবরাহ বিতরণ',
-    description: 'মেধাবী ও দরিদ্র শিক্ষার্থীদের জন্য বৃত্তি প্রোগ্রাম চালু এবং প্রয়োজনীয় শিক্ষা উপকরণ বিতরণ করা হয়েছে। শিক্ষার মান উন্নয়নে প্রতিশ্রুতিবদ্ধ থাকার অঙ্গীকার করা হয়েছে।',
-    images: [
-      '/aminul_haque.jpg',
-      '/aminul_nomination_post.webp',
-      '/aminul_haque.jpg',
-    ],
-    color: 'from-blue-500 to-cyan-600',
-  },
+interface Album {
+  id: number;
+  uuid: string;
+  bang_name: string;
+  bang_description: string;
+  date: string;
+  location: string;
+  status: string;
+  media_count: number;
+  media: Array<{
+    id: number;
+    uuid: string;
+    path: string;
+    type: string;
+  }>;
+}
+
+interface GalleryEvent {
+  id: number;
+  uuid: string;
+  date: string;
+  location: string;
+  title: string;
+  description: string;
+  images: string[];
+  color: string;
+}
+
+// Default color gradients for albums
+const defaultColors = [
+  'from-amber-500 to-orange-600',
+  'from-emerald-500 to-green-600',
+  'from-purple-500 to-pink-600',
+  'from-blue-500 to-cyan-600',
+  'from-rose-500 to-red-600',
+  'from-teal-500 to-cyan-600',
+  'from-indigo-500 to-purple-600',
+  'from-pink-500 to-rose-600',
 ];
 
+// Format date from YYYY-MM-DD to Bengali format
+const formatDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    const months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  } catch (error) {
+    return dateString;
+  }
+};
+
+interface PaginationMeta {
+  current_page: number;
+  last_page: number;
+  total: number;
+  per_page: number;
+  from: number;
+  to: number;
+}
+
+interface PaginationLinks {
+  first: string | null;
+  last: string | null;
+  prev: string | null;
+  next: string | null;
+}
+
 export default function GalleryClient() {
+  const [albums, setAlbums] = useState<GalleryEvent[]>([]);
+  const [allAlbums, setAllAlbums] = useState<GalleryEvent[]>([]); // Store all albums for client-side pagination
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentEventImages, setCurrentEventImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Calculate paginated albums using useMemo for immediate updates
+  const paginatedAlbums = useMemo(() => {
+    if (allAlbums.length === 0) return [];
+    
+    const perPage = 5;
+    const startIndex = (currentPage - 1) * perPage;
+    const endIndex = startIndex + perPage;
+    return allAlbums.slice(startIndex, endIndex);
+  }, [currentPage, allAlbums]);
+
+  // Update pagination meta and albums when allAlbums or currentPage changes
+  useEffect(() => {
+    if (allAlbums.length > 0) {
+      const perPage = 5;
+      const totalPages = Math.ceil(allAlbums.length / perPage);
+      const startIndex = (currentPage - 1) * perPage;
+      const endIndex = startIndex + perPage;
+      
+      setPaginationMeta({
+        current_page: currentPage,
+        last_page: totalPages,
+        total: allAlbums.length,
+        per_page: perPage,
+        from: startIndex + 1,
+        to: Math.min(endIndex, allAlbums.length),
+      });
+    }
+  }, [currentPage, allAlbums]);
+
+  // Update albums state when paginatedAlbums changes
+  useEffect(() => {
+    setAlbums(paginatedAlbums);
+  }, [paginatedAlbums]);
+
+  // Fetch all albums once on mount
+  useEffect(() => {
+    const fetchAlbums = async () => {
+      // If we already have all albums, skip fetch
+      if (allAlbums.length > 0) {
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+        
+        // Always fetch all albums without pagination parameters
+        const url = `${apiBaseUrl}/albums/list`;
+        
+        const response = await fetch(url, {
+          cache: 'no-store',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          // Get error details
+          let errorMessage = `Failed to fetch albums (${response.status}): ${response.statusText}`;
+          
+          try {
+            const errorText = await response.text();
+            console.error('API Error Response:', errorText);
+            
+            if (errorText) {
+              try {
+                const errorData = JSON.parse(errorText);
+                if (errorData.message) {
+                  errorMessage = errorData.message;
+                } else if (errorData.error) {
+                  errorMessage = errorData.error;
+                } else if (errorData.errors) {
+                  errorMessage = JSON.stringify(errorData.errors);
+                }
+              } catch {
+                // If not JSON, use the text as error message
+                if (errorText.length < 200) {
+                  errorMessage = errorText;
+                }
+              }
+            }
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+          }
+          
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        
+        // Handle the API response structure: { success: true, data: { data: [...] } }
+        let albumsData: Album[] = [];
+        
+        if (data.success && data.data) {
+          if (data.data.data && Array.isArray(data.data.data)) {
+            albumsData = data.data.data;
+          } else if (Array.isArray(data.data)) {
+            albumsData = data.data;
+          }
+        } else if (Array.isArray(data)) {
+          albumsData = data;
+        } else if (data.data && Array.isArray(data.data)) {
+          albumsData = data.data;
+        }
+
+        // Filter only active albums and map to gallery events
+        const mappedAlbums: GalleryEvent[] = albumsData
+          .filter((album: Album) => album.status === 'active')
+          .map((album: Album, index: number) => {
+            // Get only image media
+            const images = album.media
+              .filter((media) => media.type === 'image')
+              .map((media) => media.path);
+
+            return {
+              id: album.id,
+              uuid: album.uuid,
+              date: formatDate(album.date),
+              location: album.location || '',
+              title: album.bang_name || '',
+              description: album.bang_description || '',
+              images: images,
+              color: defaultColors[index % defaultColors.length],
+            };
+          });
+
+        // Store all albums for client-side pagination
+        setAllAlbums(mappedAlbums);
+      } catch (err) {
+        console.error('Error fetching albums:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch albums');
+        setAlbums([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAlbums();
+  }, [allAlbums.length]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const openLightbox = (image: string, eventImages: string[]) => {
     setSelectedImage(image);
@@ -87,16 +256,54 @@ export default function GalleryClient() {
     }
   };
 
+  if (loading) {
+    return (
+      <section className="py-20 px-4">
+        <div className="mx-auto max-w-7xl text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mb-4"></div>
+          <p className="text-xl text-slate-600">লোড হচ্ছে...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-20 px-4">
+        <div className="mx-auto max-w-7xl text-center">
+          <p className="text-xl text-red-600 mb-4">ত্রুটি: {error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition-all"
+          >
+            আবার চেষ্টা করুন
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  // Only show empty message if we've finished loading and have no albums at all
+  if (!loading && allAlbums.length === 0) {
+    return (
+      <section className="py-20 px-4">
+        <div className="mx-auto max-w-7xl text-center">
+          <p className="text-xl text-slate-600">কোনো অ্যালবাম পাওয়া যায়নি</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <>
       <section className="py-20 px-4">
         <div className="mx-auto max-w-7xl space-y-16">
-          {CAMPAIGN_EVENTS.map((event, idx) => (
+          {albums.length > 0 ? (
+            albums.map((event, idx) => (
             <motion.div
-              key={event.date}
+              key={`${event.uuid || event.id}-${currentPage}`}
               initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: idx * 0.1 }}
               className="relative"
             >
@@ -155,8 +362,78 @@ export default function GalleryClient() {
                 </div>
               </div>
             </motion.div>
-          ))}
+            ))
+          ) : (
+            !loading && allAlbums.length > 0 && (
+              <div className="text-center py-20">
+                <p className="text-xl text-slate-600">এই পাতায় কোনো অ্যালবাম নেই</p>
+              </div>
+            )
+          )}
         </div>
+
+        {/* Pagination - Only show if there are more than 5 albums */}
+        {paginationMeta && paginationMeta.total > 5 && paginationMeta.last_page > 1 && (
+          <div className="mt-16 flex items-center justify-center gap-2">
+            {/* Previous Button */}
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+            >
+              <FaAngleLeft />
+              পূর্ববর্তী
+            </button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center gap-2">
+              {Array.from({ length: paginationMeta.last_page }, (_, i) => i + 1).map((page) => {
+                // Show first page, last page, current page, and pages around current
+                const showPage =
+                  page === 1 ||
+                  page === paginationMeta.last_page ||
+                  (page >= currentPage - 1 && page <= currentPage + 1);
+
+                if (!showPage) {
+                  // Show ellipsis
+                  if (page === currentPage - 2 || page === currentPage + 2) {
+                    return (
+                      <span key={page} className="px-2 text-slate-400">
+                        ...
+                      </span>
+                    );
+                  }
+                  return null;
+                }
+
+                return (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      currentPage === page
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg'
+                        : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === paginationMeta.last_page}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+            >
+              পরবর্তী
+              <FaAngleRight />
+            </button>
+          </div>
+        )}
+
       </section>
 
       {/* Lightbox */}

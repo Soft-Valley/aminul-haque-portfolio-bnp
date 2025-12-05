@@ -3,25 +3,18 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { FaClipboardList, FaArrowRight, FaQuestionCircle } from 'react-icons/fa';
+import { FaClipboardList, FaArrowRight } from 'react-icons/fa';
 import Image from 'next/image';
 
 interface Survey {
-  id: string;
+  id: number;
+  uuid: string;
+  status: string;
+  image?: string;
   title: string;
-  shortDescription: string;
   description: string;
-  thumbnail?: string;
-  images?: string[];
-  videos?: Array<{ url: string; title: string }>;
-  questions: Array<{
-    id: string;
-    type: string;
-    question: string;
-    options?: string[];
-    placeholder?: string;
-    required?: boolean;
-  }>;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function SurveysPage() {
@@ -31,11 +24,95 @@ export default function SurveysPage() {
   useEffect(() => {
     const fetchSurveys = async () => {
       try {
-        const response = await fetch('/data/surveys.json');
+        setLoading(true);
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+        
+        // Try different endpoint variations
+        let response: Response | null = null;
+        const endpoints = [
+          `${apiBaseUrl}/surveys`,
+          `${apiBaseUrl}/survey`,
+          `${apiBaseUrl}/surveys/list`,
+        ];
+        
+        for (const url of endpoints) {
+          try {
+            response = await fetch(url, {
+              cache: 'no-store',
+              headers: {
+                'Accept': 'application/json',
+              },
+            });
+            
+            if (response.ok) {
+              console.log(`Successfully fetched from: ${url}`);
+              break;
+            } else if (response.status !== 404) {
+              // If it's not 404, break and handle the error
+              break;
+            }
+          } catch (fetchError) {
+            console.warn(`Failed to fetch from ${url}:`, fetchError);
+            continue;
+          }
+        }
+        
+        if (!response) {
+          throw new Error('Failed to fetch from any endpoint');
+        }
+
+        if (!response || !response.ok) {
+          let errorMessage = `Failed to fetch surveys (${response?.status || 'unknown'}): ${response?.statusText || 'Unknown error'}`;
+          
+          if (response) {
+            try {
+              const errorText = await response.text();
+              console.error('API Error Response:', errorText);
+              
+              if (errorText) {
+                try {
+                  const errorData = JSON.parse(errorText);
+                  if (errorData.message) {
+                    errorMessage = errorData.message;
+                  } else if (errorData.error) {
+                    errorMessage = errorData.error;
+                  }
+                } catch {
+                  if (errorText.length < 200) {
+                    errorMessage = errorText;
+                  }
+                }
+              }
+            } catch (parseError) {
+              console.error('Error parsing error response:', parseError);
+            }
+          }
+          
+          console.error(errorMessage);
+          setSurveys([]);
+          return;
+        }
+
         const data = await response.json();
-        setSurveys(data);
+        console.log('Surveys API Response:', data);
+        
+        // Handle the API response structure
+        let surveysData: Survey[] = [];
+        if (data.success && data.data && Array.isArray(data.data)) {
+          surveysData = data.data;
+        } else if (Array.isArray(data)) {
+          surveysData = data;
+        } else if (data.data && Array.isArray(data.data)) {
+          surveysData = data.data;
+        }
+
+        // Filter only active surveys
+        const activeSurveys = surveysData.filter((survey: Survey) => survey.status === 'active');
+        
+        setSurveys(activeSurveys);
       } catch (error) {
         console.error('Error loading surveys:', error);
+        setSurveys([]);
       } finally {
         setLoading(false);
       }
@@ -100,7 +177,7 @@ export default function SurveysPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {surveys.map((survey, idx) => (
                 <motion.div
-                  key={survey.id}
+                  key={survey.uuid || survey.id}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: idx * 0.1 }}
@@ -109,22 +186,16 @@ export default function SurveysPage() {
                   <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-green-600 rounded-3xl blur-2xl opacity-20 group-hover:opacity-40 transition-all"></div>
                   <div className="relative bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all border border-slate-200 overflow-hidden h-full flex flex-col">
                     {/* Thumbnail */}
-                    {survey.thumbnail && (
+                    {survey.image && (
                       <div className="relative h-48 w-full overflow-hidden bg-slate-200">
                         <Image
-                          src={survey.thumbnail}
+                          src={survey.image}
                           alt={survey.title}
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-500"
                           unoptimized
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                        <div className="absolute bottom-4 left-4 right-4">
-                          <div className="flex items-center gap-2 text-white text-sm font-bold">
-                            <FaQuestionCircle />
-                            <span>{survey.questions.length} টি প্রশ্ন</span>
-                          </div>
-                        </div>
                       </div>
                     )}
                     
@@ -134,19 +205,11 @@ export default function SurveysPage() {
                         {survey.title}
                       </h3>
                       <p className="text-slate-600 leading-relaxed mb-6 flex-1 line-clamp-3">
-                        {survey.shortDescription}
+                        {survey.description}
                       </p>
                       
-                      {/* Question Count (if no thumbnail) */}
-                      {!survey.thumbnail && (
-                        <div className="flex items-center gap-2 text-emerald-600 text-sm font-bold mb-4">
-                          <FaQuestionCircle />
-                          <span>{survey.questions.length} টি প্রশ্ন</span>
-                        </div>
-                      )}
-                      
                       <Link
-                        href={`/surveys/${survey.id}`}
+                        href={`/surveys/${survey.uuid || survey.id}`}
                         className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-green-700 transition-all transform hover:scale-105 group-hover:gap-3"
                       >
                         জরিপ দেখুন <FaArrowRight />

@@ -154,25 +154,6 @@ export default function ContactPage() {
                   </div>
                 </div>
               </div>
-
-              {/* FAQ Quick Links */}
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-2xl blur opacity-20"></div>
-                <div className="relative bg-white rounded-2xl p-8 shadow-xl border border-slate-200">
-                  <h3 className="text-2xl font-black text-slate-900 mb-4">দ্রুত সাহায্য</h3>
-                  <p className="text-slate-700 mb-4">
-                    প্রশ্ন আছে? আমাদের FAQ বিভাগ দেখুন বা আমাদের ব্লগ পড়ুন।
-                  </p>
-                  <div className="flex gap-3">
-                    <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
-                      FAQ
-                    </button>
-                    <button className="px-6 py-3 bg-slate-100 text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-all">
-                      ব্লগ
-                    </button>
-                  </div>
-                </div>
-              </div>
             </motion.div>
           </div>
         </div>
