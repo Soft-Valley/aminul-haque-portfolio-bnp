@@ -8,7 +8,7 @@ interface Category {
 
 async function getComplaintCategories(): Promise<Category[]> {
   try {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://admin.arsonconsultancy.org/api/v1';
     const response = await fetch(`${apiBaseUrl}/complains-category`, {
       next: { revalidate: 60 }, // Revalidate every 60 seconds
     });

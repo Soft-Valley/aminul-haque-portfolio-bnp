@@ -36,7 +36,7 @@ export default function CommentsClient({ initialComments }: CommentsClientProps)
     const fetchComments = async () => {
       try {
         setIsRefreshing(true);
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://admin.arsonconsultancy.org/api/v1';
         const response = await fetch(`${apiBaseUrl}/comments`, {
           cache: 'no-store', // Always fetch fresh data
         });
@@ -134,7 +134,7 @@ export default function CommentsClient({ initialComments }: CommentsClientProps)
     setError(null);
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://admin.arsonconsultancy.org/api/v1';
       const response = await fetch(`${apiBaseUrl}/comments`, {
         method: 'POST',
         headers: {

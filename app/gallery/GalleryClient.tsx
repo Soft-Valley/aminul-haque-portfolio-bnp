@@ -130,7 +130,7 @@ export default function GalleryClient() {
       try {
         setLoading(true);
         setError(null);
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://admin.arsonconsultancy.org/api/v1';
         
         // Always fetch all albums without pagination parameters
         const url = `${apiBaseUrl}/albums/list`;

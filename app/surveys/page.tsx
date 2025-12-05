@@ -25,7 +25,7 @@ export default function SurveysPage() {
     const fetchSurveys = async () => {
       try {
         setLoading(true);
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://admin.arsonconsultancy.org/api/v1';
         
         // Try different endpoint variations
         let response: Response | null = null;

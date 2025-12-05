@@ -33,7 +33,7 @@ export default function PressReleasePage() {
       try {
         setLoading(true);
         setError(null);
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://admin.arsonconsultancy.org/api/v1';
         const response = await fetch(`${apiBaseUrl}/news`, {
           cache: 'no-store',
         });
@@ -76,7 +76,7 @@ export default function PressReleasePage() {
   // Map news to press release format
   const pressReleases = news.map((item) => {
     const firstDetail = item.details && item.details.length > 0 ? item.details[0] : null;
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://admin.arsonconsultancy.org';
     
     // Build image URL - check if it's already a full URL or needs base URL
     let imageUrl = '/aminul_haque.jpg'; // Fallback image

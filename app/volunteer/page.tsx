@@ -189,7 +189,7 @@ export default function VolunteerPage() {
     setSubmitError(null);
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://admin.arsonconsultancy.org/api/v1';
       
       // Map availability IDs to labels
       const availabilityLabels = formData.availability.map((id) => {

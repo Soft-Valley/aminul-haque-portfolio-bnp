@@ -33,7 +33,7 @@ export default function ProgramsClient({ programs: initialPrograms, error: initi
     const fetchPrograms = async () => {
       try {
         setIsRefreshing(true);
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://admin.arsonconsultancy.org/api/v1';
         const response = await fetch(`${apiBaseUrl}/programs`, {
           cache: 'no-store', // Always fetch fresh data
         });
@@ -63,8 +63,8 @@ export default function ProgramsClient({ programs: initialPrograms, error: initi
           if (program.image) {
             const image = program.image.trim();
             if (image.startsWith('http://') || image.startsWith('https://')) {
-              const baseStorageUrl = 'https://api-protfolio.trusttous.com/storage';
-              const baseStorageUrlHttp = 'http://api-protfolio.trusttous.com/storage';
+              const baseStorageUrl = 'https://admin.arsonconsultancy.org/storage';
+              const baseStorageUrlHttp = 'http://admin.arsonconsultancy.org/storage';
               if (image !== baseStorageUrl && image !== baseStorageUrlHttp && image.length > baseStorageUrl.length) {
                 imageUrl = image;
               }
@@ -72,7 +72,7 @@ export default function ProgramsClient({ programs: initialPrograms, error: initi
               imageUrl = image;
             } else if (image) {
               imageUrl = image.startsWith('storage/') || image.startsWith('/storage/')
-                ? `https://api-protfolio.trusttous.com/${image.replace(/^\//, '')}`
+                ? `https://admin.arsonconsultancy.org/${image.replace(/^\//, '')}`
                 : image;
             }
           }
