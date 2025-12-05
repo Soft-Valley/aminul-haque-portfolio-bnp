@@ -37,14 +37,18 @@ interface SurveyDetailClientProps {
 export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) {
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [formData, setFormData] = useState<{
     answers: Record<string, string>;
     name: string;
+    email: string;
     phone: string;
     area: string;
   }>({
     answers: {},
     name: '',
+    email: '',
     phone: '',
     area: '',
   });
@@ -69,7 +73,7 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
     }
   };
 
-  const handleInputChange = (field: 'name' | 'phone' | 'area', value: string) => {
+  const handleInputChange = (field: 'name' | 'email' | 'phone' | 'area', value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -91,6 +95,11 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
     if (!formData.name.trim()) {
       newErrors.name = 'নাম আবশ্যক';
     }
+    if (!formData.email.trim()) {
+      newErrors.email = 'ইমেইল আবশ্যক';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'সঠিক ইমেইল ঠিকানা লিখুন';
+    }
     if (!formData.phone.trim()) {
       newErrors.phone = 'ফোন নম্বর আবশ্যক';
     }
@@ -111,12 +120,58 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      // In a real app, you would send this data to a backend
-      // For now, we'll just show success message
-      setSubmitted(true);
+    if (!validateForm() || !survey) return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+      
+      // Format answers array according to API requirements
+      const answers = survey.questions.map((question, index) => ({
+        survey_id: survey.id,
+        question_id: question.id,
+        answer_text: formData.answers[question.id.toString()] || '',
+      }));
+
+      // Prepare form data
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('phone', formData.phone);
+      
+      // Append answers array
+      answers.forEach((answer, index) => {
+        formDataToSend.append(`answers[${index}][survey_id]`, answer.survey_id.toString());
+        formDataToSend.append(`answers[${index}][question_id]`, answer.question_id.toString());
+        formDataToSend.append(`answers[${index}][answer_text]`, answer.answer_text);
+      });
+
+      const response = await fetch(`${apiBaseUrl}/survey/answer/store`, {
+        method: 'POST',
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to submit survey' }));
+        throw new Error(errorData.message || `Failed to submit survey: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setSubmitted(true);
+      } else {
+        throw new Error(data.message || 'Failed to submit survey');
+      }
+    } catch (error) {
+      console.error('Error submitting survey:', error);
+      setSubmitError(error instanceof Error ? error.message : 'জরিপ জমা দেওয়ার সময় একটি ত্রুটি হয়েছে');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -168,8 +223,9 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
                 <button
                   onClick={() => {
                     setSubmitted(false);
-                    setFormData({ answers: {}, name: '', phone: '', area: '' });
+                    setFormData({ answers: {}, name: '', email: '', phone: '', area: '' });
                     setErrors({});
+                    setSubmitError(null);
                   }}
                   className="px-8 py-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all"
                 >
@@ -314,6 +370,22 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
                 </div>
                 <div>
                   <label className="block text-lg font-bold text-slate-900 mb-2">
+                    ইমেইল <span className="text-red-500">*</span>
+                  </label>
+                  {errors.email && (
+                    <p className="text-red-500 text-sm font-bold mb-2">{errors.email}</p>
+                  )}
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="আপনার ইমেইল লিখুন"
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-slate-700 font-medium"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-lg font-bold text-slate-900 mb-2">
                     ফোন নম্বর <span className="text-red-500">*</span>
                   </label>
                   {errors.phone && (
@@ -347,13 +419,28 @@ export default function SurveyDetailClient({ survey }: SurveyDetailClientProps) 
               </div>
             </div>
 
+            {/* Error Message */}
+            {submitError && (
+              <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+                <p className="text-red-600 font-bold">{submitError}</p>
+              </div>
+            )}
+
             {/* Submit Button */}
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 type="submit"
-                className="flex-1 px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-green-700 transition-all transform hover:scale-105"
+                disabled={submitting}
+                className="flex-1 px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-green-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
               >
-                জমা দিন
+                {submitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    জমা দেওয়া হচ্ছে...
+                  </>
+                ) : (
+                  'জমা দিন'
+                )}
               </button>
               <Link
                 href="/surveys"

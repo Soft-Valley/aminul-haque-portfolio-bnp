@@ -1,55 +1,115 @@
 "use client";
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import PressReleaseCard from '../components/PressReleaseCard';
 import { FaNewspaper, FaBullhorn } from 'react-icons/fa';
 
+interface NewsDetail {
+  id: number;
+  title: string;
+  description: string;
+  image_small?: string;
+  image_medium?: string;
+  image_large?: string;
+  image_original?: string;
+}
+
+interface News {
+  id: number;
+  uuid: string;
+  slug: string;
+  status: string;
+  news_datetime: string;
+  details: NewsDetail[];
+}
+
 export default function PressReleasePage() {
-  const pressReleases = [
-    {
-      title: 'আমিনুল হক বিএনপির ঢাকা উত্তর সিটি ইউনিটের সদস্য সচিব হিসেবে নিযুক্ত',
-      summary: 'বিশিষ্ট ফুটবলার ও সামাজিক ব্যক্তিত্ব আমিনুল হক বাংলাদেশ জাতীয়তাবাদী দল (বিএনপি) এর ঢাকা উত্তর সিটি ইউনিটের সদস্য সচিব হিসেবে দায়িত্ব গ্রহণ করেছেন।',
-      date: '১৫ নভেম্বর ২০২৫',
-      slug: 'aminul-bnp-appointment',
-      image: '/aminul_nomination_post.webp',
-    },
-    {
-      title: 'স্থানীয় যুব ফুটবল উন্নয়ন প্রোগ্রাম উদ্বোধন',
-      summary: 'আমিনুল হক ঢাকার বিভিন্ন এলাকায় তরুণ প্রতিভা বিকাশের জন্য একটি বিস্তৃত ফুটবল প্রশিক্ষণ কর্মসূচি চালু করেছেন যা প্রতিবছর ৫০০+ যুবকদের উপকৃত করবে।',
-      date: '৩ নভেম্বর ২০২৫',
-      slug: 'youth-football-program',
-      image: '/aminul_haque.jpg',
-      hasVideo: true,
-    },
-    {
-      title: 'গ্রামীণ শিক্ষা উদ্যোগে আমিনুল হক এর অবদান',
-      summary: 'প্রত্যন্ত অঞ্চলে শিক্ষার মান উন্নয়নে একটি নতুন উদ্যোগ ঘোষণা করেছেন আমিনুল হক। এই কর্মসূচির মাধ্যমে ১০টি গ্রামে স্কুল সুবিধা উন্নত করা হবে।',
-      date: '২২ অক্টোবর ২০২৫',
-      slug: 'rural-education-initiative',
-      image: '/aminul_haque.jpg',
-    },
-    {
-      title: 'সম্প্রদায়ের স্বাস্থ্য সচেতনতা ক্যাম্পেইন শুরু',
-      summary: 'স্থানীয় সম্প্রদায়ে স্বাস্থ্য সেবা এবং সচেতনতা বৃদ্ধির জন্য একটি বিনামূল্যে স্বাস্থ্য পরীক্ষা এবং শিক্ষা কর্মসূচি চালু করা হয়েছে।',
-      date: '১০ অক্টোবর ২০২৫',
-      slug: 'health-awareness-campaign',
-      image: '/aminul_haque.jpg',
-    },
-    {
-      title: 'কৃষক কল্যাণ কর্মসূচির নতুন পর্যায়',
-      summary: 'স্থানীয় কৃষকদের সহায়তা করার জন্য একটি বিস্তৃত কৃষি সহায়তা কর্মসূচি ঘোষণা করা হয়েছে যা আধুনিক কৃষি পদ্ধতি এবং সম্পদে অ্যাক্সেস প্রদান করবে।',
-      date: '২৮ সেপ্টেম্বর ২০২৫',
-      slug: 'farmer-welfare-program',
-      image: '/aminul_haque.jpg',
-      hasVideo: true,
-    },
-    {
-      title: 'মহিলা ক্ষমতায়ন ওয়ার্কশপ সিরিজ',
-      summary: 'স্থানীয় মহিলাদের দক্ষতা উন্নয়ন এবং অর্থনৈতিক স্বাধীনতার জন্য একটি নতুন প্রশিক্ষণ কর্মসূচি শুরু হয়েছে।',
-      date: '১৫ সেপ্টেম্বর ২০২৫',
-      slug: 'women-empowerment-workshop',
-      image: '/aminul_haque.jpg',
-    },
-  ];
+  const [news, setNews] = useState<News[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com/api/v1';
+        const response = await fetch(`${apiBaseUrl}/news`, {
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch news: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // Handle the API response structure
+        let newsData: News[] = [];
+        if (data.success && data.data) {
+          if (data.data.data && Array.isArray(data.data.data)) {
+            newsData = data.data.data;
+          } else if (Array.isArray(data.data)) {
+            newsData = data.data;
+          }
+        } else if (Array.isArray(data)) {
+          newsData = data;
+        } else if (data.data && Array.isArray(data.data)) {
+          newsData = data.data;
+        }
+
+        // Filter only active news
+        const activeNews = newsData.filter((item: News) => item.status === 'active');
+        
+        setNews(activeNews);
+      } catch (err) {
+        console.error('Error fetching news:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch news');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNews();
+  }, []);
+
+  // Map news to press release format
+  const pressReleases = news.map((item) => {
+    const firstDetail = item.details && item.details.length > 0 ? item.details[0] : null;
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api-protfolio.trusttous.com';
+    
+    // Build image URL - check if it's already a full URL or needs base URL
+    let imageUrl = '/aminul_haque.jpg'; // Fallback image
+    if (firstDetail?.image_large) {
+      imageUrl = firstDetail.image_large.startsWith('http') 
+        ? firstDetail.image_large 
+        : `${apiBaseUrl}/${firstDetail.image_large}`;
+    } else if (firstDetail?.image_medium) {
+      imageUrl = firstDetail.image_medium.startsWith('http')
+        ? firstDetail.image_medium
+        : `${apiBaseUrl}/${firstDetail.image_medium}`;
+    } else if (firstDetail?.image_original) {
+      imageUrl = firstDetail.image_original.startsWith('http')
+        ? firstDetail.image_original
+        : `${apiBaseUrl}/${firstDetail.image_original}`;
+    }
+    
+    // Extract text from HTML description and create summary
+    const descriptionText = firstDetail?.description 
+      ? firstDetail.description.replace(/<[^>]*>/g, '').trim()
+      : '';
+    const summary = descriptionText.length > 150 
+      ? descriptionText.substring(0, 150) + '...'
+      : descriptionText || 'সংবাদের বিবরণ';
+    
+    return {
+      title: firstDetail?.title || 'সংবাদ',
+      summary: summary,
+      date: item.news_datetime || '',
+      slug: item.slug || item.uuid,
+      image: imageUrl,
+    };
+  });
 
   return (
     <main className="bg-gradient-to-b from-slate-50 via-white to-slate-50">
@@ -80,18 +140,45 @@ export default function PressReleasePage() {
       {/* Press Releases Grid */}
       <section className="py-20 px-4">
         <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {pressReleases.map((release, idx) => (
-              <motion.div
-                key={release.slug}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
+          {loading ? (
+            <div className="text-center py-20">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-xl text-slate-600">লোড হচ্ছে...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-20">
+              <p className="text-xl text-red-600 mb-4">ত্রুটি: {error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all"
               >
-                <PressReleaseCard {...release} />
-              </motion.div>
-            ))}
-          </div>
+                আবার চেষ্টা করুন
+              </button>
+            </div>
+          ) : pressReleases.length === 0 ? (
+            <div className="text-center py-20">
+              <FaNewspaper className="text-6xl text-slate-300 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-slate-700 mb-2">
+                কোন সংবাদ নেই
+              </h3>
+              <p className="text-slate-500">
+                শীঘ্রই নতুন সংবাদ যুক্ত করা হবে
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {pressReleases.map((release, idx) => (
+                <motion.div
+                  key={release.slug}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: idx * 0.1 }}
+                >
+                  <PressReleaseCard {...release} />
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
