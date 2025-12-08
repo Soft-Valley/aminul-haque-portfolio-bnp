@@ -16,14 +16,15 @@ export default function Hero() {
             জনগণের সেবায়
           </span>
           <h1 className="text-5xl md:text-7xl font-black leading-tight text-slate-900">
-            সত্যিকারের পরিবর্তন
-            <br />
+          সবার আগে 
+            {/* <br /> */}
             <span className="block mt-2 bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
-              আপনার জীবনে
+            বাংলাদেশ
             </span>
           </h1>
           <p className="text-slate-600 text-lg max-w-prose leading-relaxed">
-            শিক্ষা, কৃষি, শিল্প ও সংস্কৃতির মাধ্যমে আমাদের জনগণকে ক্ষমতায়ন করা। বাংলাদেশের উজ্জ্বল ভবিষ্যৎ গড়তে আমাদের সাথে যুক্ত হন।
+          আপনার জীবনের সমস্যার সমাধানই আমাদের রাজনীতি
+            আপনার স্বপ্নের বাংলাদেশ গড়ার লড়াইয়ে আছি আপনার পাশে
           </p>
           <div className="flex items-center gap-4">
             <Link

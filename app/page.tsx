@@ -185,21 +185,21 @@ export default function Home() {
   const manifestos = [
     {
       title: "আমিনুল ভাইয়ের ইশতেহার",
-      description: "জনগণের জন্য, জনগণের দ্বারা - একটি সমৃদ্ধ ভবিষ্যৎ",
+      description: "ঢাকা ১৬ আসনের রাজনৈতিক ও আর্থ-সামাজিক মুক্তির লক্ষ্যে প্রণীত",
       icon: FaFileAlt,
       color: "from-emerald-500 to-green-600",
       link: "/aminul-manifesto"
     },
     {
       title: "বিএনপির ৩১ দফা",
-      description: "রাষ্ট্র কাঠামো মেরামত ও গণতান্ত্রিক সংস্কার",
+      description: "গণতন্ত্র পুনরুদ্ধার ও রাষ্ট্রীয় সংস্কারের রূপরেখা",
       icon: FaFlag,
       color: "from-red-500 to-orange-600",
       link: "/bnp-31-point"
     },
     {
       title: "বিএনপির ১৯ দফা",
-      description: "শহীদ প্রেসিডেন্ট জিয়াউর রহমানের ঐতিহাসিক কর্মসূচি",
+      description: "দেশের আর্থ-সামাজিক মুক্তির লক্ষ্যে প্রণীত",
       icon: FaChartLine,
       color: "from-green-500 to-emerald-600",
       link: "/bnp-19-point"
@@ -227,7 +227,7 @@ export default function Home() {
               ইশতেহার ও <span className="bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">কর্মসূচি</span>
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-              জনগণের জন্য, জনগণের দ্বারা - আমাদের ইশতেহার ও কর্মসূচি দেখুন
+            জনগণের দাবি, জনগণের অধিকার ও সমাধানকে ভিত্তি করে গড়ে ওঠা আমাদের ইশতেহার ও কর্মপরিকল্পনা
             </p>
           </motion.div>
 

@@ -7,14 +7,14 @@ import { FaBars, FaTimes, FaChevronDown } from 'react-icons/fa';
 
 const navItems = [
   { href: '/', label: 'হোম' },
-  { href: '/about', label: 'সম্পর্কে' },
+  { href: '/about', label: 'জীবনী' },
   { href: '/aminul-manifesto', label: 'ইশতেহার' },
-  { href: '/programs', label: 'কর্মসূচি' },
+  { href: '/programs', label: 'কর্মপরিকল্পনা' },
   { 
     label: 'পলিসি',
     hasDropdown: true,
     dropdownItems: [
-      { href: '/manifesto', label: 'রূপকল্প' },
+      { href: '/manifesto', label: 'ক্রীড়াউন্নয়ন' },
       { href: '/bnp-31-point', label: 'বিএনপির ৩১ দফা' },
       { href: '/bnp-19-point', label: 'বিএনপির ১৯ দফা' },
     ]
