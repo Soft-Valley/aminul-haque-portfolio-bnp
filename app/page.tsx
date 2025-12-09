@@ -108,7 +108,7 @@ export default function Home() {
           // Filter active albums and take first 3
           const activeAlbums = albumsData
             .filter((album: Album) => album.status === 'active')
-            .slice(0, 3);
+            .slice(0, 6);
           
           setAlbums(activeAlbums);
         }
