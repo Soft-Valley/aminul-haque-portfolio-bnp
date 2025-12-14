@@ -219,7 +219,7 @@ export default function KheladhulaClient() {
         
         // Always fetch all albums without pagination parameters
         // You can change this endpoint if there's a specific API for sports/playground activities
-        const url = `${apiBaseUrl}/albums/list`;
+        const url = `${apiBaseUrl}/sports/list`;
         
         const response = await fetch(url, {
           cache: 'no-store',
